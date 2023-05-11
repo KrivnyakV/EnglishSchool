@@ -134,11 +134,89 @@ def add_course():
     :return: Все существующие новости
     '''
     try:
-        data = request.data
-        print("data", data)
+
+        # data = json.loads(request.form['formValues'])
+        # file = request.files.get("file")
+        #
+        # data = request.data
+        # data = request.data
+        data_2 = request.form
+        data_3 = request.json
+
+        try:
+            s = request.form.get('form')
+            print(s)
+        except Exception as e :
+            print(e)
+
+
+
+
+
+        try:
+            print(data_2)
+            print(data_3)
+        except Exception as e:
+            print(e)
+
+        try:
+            file = request.files.get("file")
+            print(file)
+        except Exception as e:
+            print(e)
+
+        try:
+            data = request.data
+            print('data',data)
+        except Exception as e:
+            print(e)
+
+        try:
+            data_2 = request.form
+            print('2', data_2)
+        except Exception as e:
+            print(e)
+
+        try:
+            data_3 = request.json
+            print('3',data_3)
+        except Exception as e:
+            print(e)
+
+        try:
+            print('ok', request.get_data())
+        except Exception as e:
+            print(e)
+
+
         return json.dumps({"ХУЕТА": ":)"})
-    except:
+    except Exception as e:
+        print(e)
+
         return Response(status=400, response="Неправильный запрос. Возможно ошибка с картинкой")
+
+
+
+
+
+
+@app.route("/fullCourses", methods= ['GET'])
+def get_full_courses():
+    '''
+    :return: Возвращает все мероприятия
+    :rtype:
+    '''
+    try:
+
+        courses = get_all_courses()
+        # all_mentors = get_all_mentors()
+        if type(courses) == str or type(courses) == list:
+            return Response(status=200, response=json.loads(str(courses)))
+        else:
+            return Response(status=500, response='Failed request')
+    except Exception as e:
+        print(e)
+        return Response(status=500, response='Failed by exception')
 
 
 #-----------------------------------------------------------------------Роуты новостей---------------------------------------------------------------

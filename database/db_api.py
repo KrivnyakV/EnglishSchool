@@ -96,6 +96,30 @@ def get_all_courses_by_direction(id):
         return None
 
 
+def get_all_courses():
+    request = select(Courses)
+    try:
+        conn = engine.connect()
+        response = conn.execute(request)
+        all_courses = response.fetchall()
+        conn.commit()
+        conn.close()
+        print(all_courses)
+        print(type(all_courses))
+
+        return all_courses
+
+
+    except Exception as e:
+        print(e)
+        return None
+
+
+
+
+
+
+
 def get_last_id_of_course():
     request = select(Courses).order_by(Courses.id.desc())
     try:
