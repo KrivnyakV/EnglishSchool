@@ -18,6 +18,7 @@ Upload = "static"
 app.config['uploadFolder'] = Upload
 
 
+
 #-----------------------------------------------------------------------------------------Роуты пользователя-----------------------------------------------------------------------------------
 
 
@@ -68,7 +69,7 @@ def check_user():
         user_data = getUserData(real_token)
         #------
 
-        return Response(status=200,response = json.dumps({'email':user_data[0], 'name':user_data[2], 'family': user_data[3], 'otchestvo':user_data[4], 'role':user_data[5]}))
+        return Response(status=200,response = json.dumps({'email':user_data[0], 'name':user_data[2], 'family': user_data[3], 'otchestvo':user_data[4], 'role':user_data[5], 'activeCourse': user_data[6], 'adminCourse': user_data[7]}))
     else:
         return Response(status=500,response="Invalid token")
 
@@ -92,9 +93,7 @@ def sign_out():
 @app.route("/lastCourseId", methods=['GET'])
 def get_last_id():
     '''
-    POST запрос на добавление новой новости
-    Получает картинку, дату, заголовок, текст статьи
-    :return: Все существующие новости
+    Возвращает ID  последнего курса
     '''
     try:
 
@@ -115,7 +114,6 @@ def get_courses(id):
     try:
 
         courses = get_all_courses_by_direction(id)
-        # all_mentors = get_all_mentors()
         if type(courses) == str or type(courses) == list:
             return Response(status=200, response=courses)
         else:
@@ -135,61 +133,26 @@ def add_course():
     '''
     try:
 
-        # data = json.loads(request.form['formValues'])
-        # file = request.files.get("file")
-        #
-        # data = request.data
-        # data = request.data
-        data_2 = request.form
-        data_3 = request.json
+        files = request.files.to_dict()
+        data = json.loads(request.form['courseObject'])
 
-        try:
-            s = request.form.get('form')
-            print(s)
-        except Exception as e :
-            print(e)
+        print(type(data))
 
+        for key, item in files.items():
+            filename = key + ".pdf"
+            item.save(os.path.join('static', filename))
 
+        for chapter in  data['chapters']:
+            if chapter['type'] == 'lection':
+                for i in range(len(chapter['materials'])):
+                    #TODO Получить id_direction
+                    try:
+                        chapter['materials'][i]['link'] = url_for("static", filename=f"{data['idDirections']}_{data['id']}_{chapter['id']}_{i+1}.pdf")
 
+                    except Exception as e:
+                        print(e)
 
-
-        try:
-            print(data_2)
-            print(data_3)
-        except Exception as e:
-            print(e)
-
-        try:
-            file = request.files.get("file")
-            print(file)
-        except Exception as e:
-            print(e)
-
-        try:
-            data = request.data
-            print('data',data)
-        except Exception as e:
-            print(e)
-
-        try:
-            data_2 = request.form
-            print('2', data_2)
-        except Exception as e:
-            print(e)
-
-        try:
-            data_3 = request.json
-            print('3',data_3)
-        except Exception as e:
-            print(e)
-
-        try:
-            print('ok', request.get_data())
-        except Exception as e:
-            print(e)
-
-
-        return json.dumps({"ХУЕТА": ":)"})
+        return add_course_to_db(data)
     except Exception as e:
         print(e)
 
@@ -217,6 +180,103 @@ def get_full_courses():
     except Exception as e:
         print(e)
         return Response(status=500, response='Failed by exception')
+
+
+
+@app.route("/postCourse", methods= ['POST'])
+def send_course():
+    '''
+    :return: Возвращает все мероприятия
+    :rtype:
+    '''
+    try:
+        data = json.loads(request.data.decode('utf-8'))
+
+
+        one_course = get_one_course(data)
+        if type(one_course) == str or type(one_course) == list:
+            return Response(status=200, response=one_course)
+        else:
+            return Response(status=500, response='Failed request')
+    except Exception as e:
+        print(e)
+        return Response(status=500, response='Failed by exception')
+
+
+
+
+
+
+
+@app.route("/writeCourse", methods= ['POST'])
+def write_course():
+    '''
+    '''
+    try:
+
+        data = json.loads(request.data.decode('utf-8'))
+
+
+        return add_course_to_user(data)
+    except Exception as e:
+        print("1", e)
+
+        return Response(status=400, response="Неправильный запрос.")
+
+
+
+
+@app.route("/deleteCourse", methods= ['POST'])
+def delete_course():
+    '''
+    '''
+    try:
+
+        data = json.loads(request.data.decode('utf-8'))
+
+        return delete_course_from_user(data)
+    except Exception as e:
+        print("1", e)
+
+        return Response(status=400, response="Неправильный запрос.")
+
+
+
+@app.route("/courseStatus", methods= ['POST'])
+def course_status():
+    '''
+    '''
+    try:
+
+        data = json.loads(request.data.decode('utf-8'))
+
+
+        return courseStatus(data)
+    except Exception as e:
+        print("1", e)
+
+        return Response(status=400, response="Неправильный запрос.")
+
+
+
+@app.route("/resultTest", methods= ['POST'])
+def rating():
+    '''
+    '''
+    try:
+
+        data = json.loads(request.data.decode('utf-8'))
+
+
+        return add_rating(data)
+    except Exception as e:
+        print("1", e)
+
+        return Response(status=400, response="Неправильный запрос.")
+
+
+
+
 
 
 #-----------------------------------------------------------------------Роуты новостей---------------------------------------------------------------
