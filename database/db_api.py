@@ -55,7 +55,13 @@ def getUser(email):
         profile_data = response.fetchall()
         conn.commit()
         conn.close()
-        return profile_data[0]
+
+        response = list(profile_data[0])
+        if not response[6]:
+            response[6] = []
+        if not response[7]:
+            response[7] = []
+        return response
     except Exception as e:
         print(e)
 
@@ -85,10 +91,12 @@ def get_all_courses_by_direction(id):
         all_courses_by_direction = response.fetchall()
         conn.commit()
         conn.close()
-        print(all_courses_by_direction)
-        print(type(all_courses_by_direction))
 
-        return all_courses_by_direction
+        response = []
+        for item in all_courses_by_direction:
+            response.append({'id': item[0], 'prevTitle': item[3], 'prevImage': item[4], 'prevAbout': item[5]})
+
+        return json.dumps({'response': response})
 
 
     except Exception as e:
@@ -115,25 +123,17 @@ def get_all_courses():
         return None
 
 
-
-
-
-
-
 def get_last_id_of_course():
-    request = select(Courses).order_by(Courses.id.desc())
+    request = select(Courses.id).order_by(Courses.id.desc()).limit(1)
     try:
         conn = engine.connect()
         response = conn.execute(request)
         last_id = response.fetchall()
         conn.commit()
         conn.close()
-        print(type(last_id))
-        print(len(last_id))
 
         if len(last_id) > 0:
-            print(int(last_id[0])+1)
-            return json.dumps({'id': int(last_id[0])+1})
+            return json.dumps({'id': last_id[0][0]+1})
         else:
             return json.dumps({'id': 1})
     except Exception as e:
@@ -144,20 +144,447 @@ def get_last_id_of_course():
 
 
 
-def add_course(data):
-    request = insert(News).values(title=data['title'], about=data['about'], image=data['image'], date=str(data['date']))
+def add_course_to_db(data):
+
+    #TODO доделать добавку админ курсесы
+    request = insert(Courses).values(id=data['id'], id_direction=data['idDirections'], all=str(data), prevTitle=data['prevTitle'], prevImage=data['prevImage'], prevAbout=data['prevAbout'] )
+
     try:
         conn = engine.connect()
         conn.execute(request)
         conn.commit()
         conn.close()
+    except Exception as e :
+        print(e)
 
-        return Response(status=200, response=get_all_news())
+
+    req = select(Users.AdminCourse).where(Users.email == data['email'])
+    try:
+        conn = engine.connect()
+        response = conn.execute(req)
+        courses_of_admin = response.fetchone()
+        conn.commit()
+        conn.close()
+
+
+
+
+        if not courses_of_admin[0]:
+            to_insert= list()
+            to_insert.append(int(data['id']))
+            request_2 = update(Users).values(AdminCourse=str(to_insert)).where(Users.email == data['email'])
+
+        else:
+            to_insert = courses_of_admin[0]
+            result = [int(x) for x in to_insert.strip('][').split(',')]
+            result.append(int(data['id']))
+            request_2 = update(Users).values(AdminCourse=str(result)).where(Users.email == data['email'])
+
+
+
+    except Exception as e :
+        print(e)
+
+
+
+    try:
+
+        conn = engine.connect()
+        conn.execute(request_2)
+        conn.commit()
+        conn.close()
+
+        return Response(status=200, response=json.dumps({"id":data['id']}))
     except Exception as e:
 
         return Response(response=e.__str__(), status=401)
     finally:
         conn.close()
+
+
+
+def add_course_to_user(data):
+
+
+    #Добавляем в поле ActiveCourses user - id курса
+    req = select(Users.ActiveCourse).where(Users.email == data['email'])
+    try:
+        conn = engine.connect()
+        response = conn.execute(req)
+        courses_of_user = response.fetchone()
+        conn.commit()
+        conn.close()
+
+
+
+        print(courses_of_user[0])
+        if not courses_of_user[0]:
+            to_insert = list()
+            to_insert.append(int(data['id']))
+            request_2 = update(Users).values(ActiveCourse=str(to_insert)).where(Users.email == data['email'])
+
+        else:
+            to_insert = courses_of_user[0]
+            if to_insert != '[]':
+                result = [int(x) for x in to_insert.strip('][').split(',')]
+            else:
+                result = []
+            result.append(int(data['id']))
+            request_2 = update(Users).values(ActiveCourse=str(result)).where(Users.email == data['email'])
+
+
+
+
+    except Exception as e :
+        print("2", e)
+
+
+
+
+#Возвращаем обьект пользователя с добавленным id  курса
+    try:
+
+        conn = engine.connect()
+        conn.execute(request_2)
+        conn.commit()
+        conn.close()
+
+
+
+
+
+        request = select(Users).where(Users.email == data['email'])
+
+        conn = engine.connect()
+        response = conn.execute(request)
+        result = response.fetchone()
+        conn.commit()
+        conn.close()
+
+
+        temp = list(result)
+
+        if temp[6]and temp[6] != '[]':
+            temp[6] = [int(x) for x in temp[6].strip('][').split(',')]
+
+
+
+        if temp[7] and temp[7] != '[]':
+            temp[7] = [int(x) for x in temp[7].strip('][').split(',')]
+
+        if temp[6] == '[]':
+            temp[6] = []
+
+        if temp[7] == '[]':
+            temp[7] = []
+
+        # print(temp)
+        result = {"email": temp[0], "family": temp[3], 'otchestvo': temp[4], "name":temp[2], "role": temp[5], "activeCourse": temp[6], "adminCourse": temp[7]}
+
+
+        try:
+
+            get_course_request = select(Courses.all).where(Courses.id == data['id'])
+
+            conn = engine.connect()
+            response = conn.execute(get_course_request)
+            course = response.fetchall()
+            conn.commit()
+            conn.close()
+
+
+
+            add_request = insert(UserCourse).values(id_course=data['id'], email_user=data['email'], all_object=course[0][0])
+            conn = engine.connect()
+            conn.execute(add_request)
+            conn.commit()
+            conn.close()
+
+            rating_request = insert(UsersRating).values(id_course=data['id'], email_user=data['email'],
+                                                    answers='{}')
+            conn = engine.connect()
+            conn.execute(rating_request)
+            conn.commit()
+            conn.close()
+
+        except Exception as e:
+
+            print(e)
+            return Response(response=e.__str__(), status=401)
+
+
+
+
+
+
+
+
+
+
+
+        return Response(status=200, response=json.dumps(result))
+
+    except Exception as e:
+        print("3", e)
+        return Response(response=e.__str__(), status=401)
+    finally:
+        conn.close()
+
+
+
+
+
+def delete_course_from_user(data):
+
+
+
+    req = select(Users.ActiveCourse).where(Users.email == data['email'])
+    try:
+        conn = engine.connect()
+        response = conn.execute(req)
+        courses_of_user = response.fetchone()
+        conn.commit()
+        conn.close()
+
+
+
+
+        if not courses_of_user[0]:
+            to_insert = list()
+            to_insert.remove(int(data['id']))
+            request_2 = update(Users).values(ActiveCourse=str(to_insert)).where(Users.email == data['email'])
+
+        else:
+            to_insert = courses_of_user[0]
+            if to_insert != '[]':
+                result = [int(x) for x in to_insert.strip('][').split(',')]
+            else:
+                result = []
+            result.remove(int(data['id']))
+            request_2 = update(Users).values(ActiveCourse=str(result)).where(Users.email == data['email'])
+
+    except Exception as e:
+        print("2", e)
+
+
+    try:
+
+        conn = engine.connect()
+        conn.execute(request_2)
+        conn.commit()
+        conn.close()
+
+
+        request = select(Users).where(Users.email == data['email'])
+
+        conn = engine.connect()
+        response = conn.execute(request)
+        result = response.fetchone()
+        conn.commit()
+        conn.close()
+
+        # print(result)
+        # print(type(result))
+
+        temp = list(result)
+
+        if temp[6] != None and temp[6] != '[]':
+            temp[6] = [int(x) for x in temp[6].strip('][').split(',')]
+
+
+
+
+
+        if temp[7] != None and temp[7] != '[]':
+
+            temp[7] = [int(x) for x in temp[7].strip('][').split(',')]
+
+        if temp[6] == '[]':
+            temp[6] = []
+
+        if temp[7] == '[]':
+            temp[7] = []
+        result = {"email": temp[0], "family": temp[3], 'otchestvo': temp[4], "name":temp[2], "role": temp[5], "activeCourse": temp[6], "adminCourse": temp[7]}
+
+
+
+        return Response(status=200, response=json.dumps(result))
+
+    except Exception as e:
+        print("3", e)
+        return Response(response=e.__str__(), status=401)
+    finally:
+        conn.close()
+
+
+#TODO
+def get_one_course(data):
+
+    request_search = select(UserCourse).where(UserCourse.email_user == data['email'] and UserCourse.id_course == data['id'])
+    conn = engine.connect()
+    response = conn.execute(request_search)
+    result = response.fetchone()
+    conn.commit()
+    conn.close()
+
+
+    if not result:
+        print("ОСНОВНАЯ ТАБЛИЦА")
+        request = select(Courses.all).where(Courses.id == data['id'])
+        try:
+            conn = engine.connect()
+            response = conn.execute(request)
+            one_course = response.fetchall()
+            conn.commit()
+            conn.close()
+
+            result = one_course[0][0].replace("False", '"false"').replace("'", '"')
+            test = json.loads(result)
+            return json.dumps({'response':test })
+
+
+        except Exception as e:
+            print(e)
+            return None
+
+    else:
+
+        request = select(UserCourse.all_object).where(UserCourse.email_user == data['email'] and UserCourse.id_course == data['id'])
+        try:
+            conn = engine.connect()
+            response = conn.execute(request)
+            one_course = response.fetchall()
+            conn.commit()
+            conn.close()
+
+            result = one_course[0][0].replace("False", '"false"').replace("'", '"')
+            test = json.loads(result)
+            return json.dumps({'response': test})
+
+
+        except Exception as e:
+            print(e)
+            return Response(response=e.__str__(), status=401)
+
+
+
+
+
+
+
+
+
+def courseStatus(data):
+
+    try:
+        add_request = update(UserCourse).values(id_course=data['id'], email_user=data['email'], all_object=str(data['course'])).where(UserCourse.id_course==data['id'] and UserCourse.email_user==data['email'])
+        conn = engine.connect()
+        conn.execute(add_request)
+        conn.commit()
+        conn.close()
+
+        return Response(status=200, response=json.dumps(data['course']))
+    except Exception as e:
+        print(e)
+        return Response(response=e.__str__(), status=401)
+
+
+
+#TODO ДОДЕЛАТЬ ТУТ !!!!
+def add_rating(data):
+    try:
+        all_weight = 0
+        correct_weight = 0
+        print(type(data), data)
+        for question in data['result']:
+            all_weight += int(question['name'])
+            id_chapter = data['idChapters']
+            if type(data['idResponse']) == str:
+                if data['idResponse'] == data['correctId']:
+                    correct_weight += int(question['name'])
+
+            else:
+                for response in question['idResponse']:
+                    if response['idRes'] in question['correctId'].split(","):
+                        correct_weight += int(response['name'])
+
+        print("all_weight", all_weight)
+        print("idChapters", id_chapter)
+        print("correct_weight", correct_weight)
+        print(f"{correct_weight * 100 / all_weight }%")
+
+    except Exception as e:
+        print(e)
+
+
+
+    return Response(status=200, response=json.dumps({"test":"huy"}))
+    # try:
+    #     append_rating = update(UsersRating).values(id_course=data['id'], email_user=data['email'], answers=????)
+    #     conn = engine.connect()
+    #     conn.execute(add_request)
+    #     conn.commit()
+    #     conn.close()
+    #
+    #     return Response(status=200, response=json.dumps(data['course']))
+    # except Exception as e:
+    #     print(e)
+    #     return Response(response=e.__str__(), status=401)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #------- NEW DB
