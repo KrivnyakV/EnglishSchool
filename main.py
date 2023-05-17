@@ -145,7 +145,6 @@ def add_course():
         for chapter in  data['chapters']:
             if chapter['type'] == 'lection':
                 for i in range(len(chapter['materials'])):
-                    #TODO Получить id_direction
                     try:
                         chapter['materials'][i]['link'] = url_for("static", filename=f"{data['idDirections']}_{data['id']}_{chapter['id']}_{i+1}.pdf")
 
@@ -162,7 +161,7 @@ def add_course():
 
 
 
-
+#TODO ПРОТЕСТИРОВАТЬ
 @app.route("/fullCourses", methods= ['GET'])
 def get_full_courses():
     '''
@@ -278,9 +277,9 @@ def rating():
 
 
 
-
-@app.route("/resultTest", methods= ['POST'])
-def rating():
+#TODO ПРОВЕРИТЬ РАБОТОСПОСОБНОСТЬ
+@app.route("/getCcoursesByID", methods= ['POST'])
+def courses_by_id():
     '''
     '''
     try:
@@ -288,14 +287,28 @@ def rating():
         data = json.loads(request.data.decode('utf-8'))
 
 
-        return add_rating(data)
+        return get_courses_by_id(data)
     except Exception as e:
         print("1", e)
 
         return Response(status=400, response="Неправильный запрос.")
 
 
+#TODO ПРОВЕРИТЬ РАБОТОСПОСОБНОСТЬ
+@app.route("/allRating", methods= ['POST'])
+def courses_by_id():
+    '''
+    '''
+    try:
 
+        data = json.loads(request.data.decode('utf-8'))
+
+
+        return get_courses_by_id(data)
+    except Exception as e:
+        print("1", e)
+
+        return Response(status=400, response="Неправильный запрос.")
 
 
 

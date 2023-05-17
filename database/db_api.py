@@ -146,7 +146,6 @@ def get_last_id_of_course():
 
 def add_course_to_db(data):
 
-    #TODO доделать добавку админ курсесы
     request = insert(Courses).values(id=data['id'], id_direction=data['idDirections'], all=str(data), prevTitle=data['prevTitle'], prevImage=data['prevImage'], prevAbout=data['prevAbout'] )
 
     try:
@@ -417,7 +416,6 @@ def delete_course_from_user(data):
         conn.close()
 
 
-#TODO
 def get_one_course(data):
 
     request_search = select(UserCourse).where(UserCourse.email_user == data['email'] and UserCourse.id_course == data['id'])
@@ -490,7 +488,6 @@ def courseStatus(data):
 
 
 
-#TODO ДОДЕЛАТЬ ТУТ !!!!
 def add_rating(data):
     try:
         all_weight = 0
@@ -577,7 +574,156 @@ def add_rating(data):
 
 
 
+def get_courses_by_id(data):
 
+    req = select(Users.AdminCourse).where(Users.email == data['email'])
+    try:
+        conn = engine.connect()
+        response = conn.execute(req)
+        courses_of_admin = response.fetchone()
+        conn.commit()
+        conn.close()
+
+        if not courses_of_admin[0]:
+            return Response(status=200, response=json.dumps({"response": []}))
+
+
+        else:
+            print(courses_of_admin[0])
+            all_courses = [int(x) for x in courses_of_admin[0].strip('][').split(',')]
+
+
+            response = []
+
+            for course in all_courses:
+                request = select(Courses).where(Courses.id == course)
+                try:
+                    conn = engine.connect()
+                    response = conn.execute(request)
+                    all_courses_by_id = response.fetchall()
+                    conn.commit()
+                    conn.close()
+                    for item in all_courses_by_id:
+                        response.append({"id":item[0],'prevTitle': item[3], 'prevImage': item[4], 'prevAbout': item[5]})
+                except Exception as e:
+                    print(e)
+
+        return Response(status=200, response=json.dumps({"response": response}))
+
+    except Exception as e:
+        return Response(status=400, response=json.dumps({"response": f"{e}"}))
+
+
+
+
+
+def get_all_rating(data):
+
+    #Из таблицы UserCourse по id курса вытащить email
+    #Из таблицы курса вытащить title
+    #Для каждого из email:
+        #{"surname": "", "name": "", "patronymic": "", "emailCourse": email, "nameCourse": title, "resultCourse": ""}
+        #Из таблицы users вытаскиваем surname, name, patronymic и добавляем
+        #Из таблицы UserRating достать answers
+
+        #Добавить обьект к списку
+    result = []
+    request = select(UserCourse.email_user).where(UserCourse.id_course == data['id'])
+    try:
+        conn = engine.connect()
+        response = conn.execute(request)
+        all_emails = response.fetchall()
+        print("all_emails", all_emails)
+        conn.commit()
+        conn.close()
+
+        request = select(Courses.all).where(Courses.id == data['id'])
+
+        conn = engine.connect()
+        response = conn.execute(request)
+        all_course = response.fetchone()
+        conn.commit()
+        conn.close()
+        print("all_course", all_course)
+        title = json.loads(all_course)['title']
+
+        for email in all_emails:
+            obj = {"surname": "", "name": "", "patronymic": "", "emailCourse": email, "nameCourse": title, "resultCourse": ""}
+
+            req = select(Users).where(Users.email == email)
+
+            conn = engine.connect()
+            response = conn.execute(req)
+            user = response.fetchone()
+            conn.commit()
+            conn.close()
+            obj["surname"], obj["name"], obj["patronymic"] = user[3], user[2], user[4]
+
+
+
+            req = select(UsersRating).where(UsersRating.email_user == email, UsersRating.id_course == data["id"])
+
+            conn = engine.connect()
+            response = conn.execute(req)
+            user_rating = response.fetchone()
+            conn.commit()
+            conn.close()
+
+            obj["resultCourse"] = user_rating
+
+            result.append(obj)
+
+
+            return Response(status=200, response=json.dumps({"response": result}))
+
+    except Exception as e:
+        print("Опаа", e)
+        return Response(status=400, response=json.dumps({"response": "Ошибка"}))
+
+
+
+
+
+
+
+
+
+    req = select(Users.AdminCourse).where(Users.email == data['email'])
+    try:
+        conn = engine.connect()
+        response = conn.execute(req)
+        courses_of_admin = response.fetchone()
+        conn.commit()
+        conn.close()
+
+        if not courses_of_admin[0]:
+            return Response(status=200, response=json.dumps({"response": []}))
+
+
+        else:
+            print(courses_of_admin[0])
+            all_courses = [int(x) for x in courses_of_admin[0].strip('][').split(',')]
+
+
+            response = []
+
+            for course in all_courses:
+                request = select(Courses).where(Courses.id == course)
+                try:
+                    conn = engine.connect()
+                    response = conn.execute(request)
+                    all_courses_by_id = response.fetchall()
+                    conn.commit()
+                    conn.close()
+                    for item in all_courses_by_id:
+                        response.append({"id":item[0],'prevTitle': item[3], 'prevImage': item[4], 'prevAbout': item[5]})
+                except Exception as e:
+                    print(e)
+
+        return Response(status=200, response=json.dumps({"response": response}))
+
+    except Exception as e:
+        return Response(status=400, response=json.dumps({"response": f"{e}"}))
 
 
 
