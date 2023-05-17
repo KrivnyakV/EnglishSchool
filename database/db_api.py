@@ -109,13 +109,15 @@ def get_all_courses():
     try:
         conn = engine.connect()
         response = conn.execute(request)
-        all_courses = response.fetchall()
+        all_courses_by_direction = response.fetchall()
         conn.commit()
         conn.close()
-        print(all_courses)
-        print(type(all_courses))
 
-        return all_courses
+        response = []
+        for item in all_courses_by_direction:
+            response.append({'id': item[0], 'prevTitle': item[3], 'prevImage': item[4], 'prevAbout': item[5]})
+
+        return json.dumps({'response': response})
 
 
     except Exception as e:
@@ -574,7 +576,7 @@ def add_rating(data):
 
 
 
-def get_courses_by_id(data):
+def all_rating_db(data):
 
     req = select(Users.AdminCourse).where(Users.email == data['email'])
     try:

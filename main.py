@@ -170,12 +170,8 @@ def get_full_courses():
     '''
     try:
 
-        courses = get_all_courses()
-        # all_mentors = get_all_mentors()
-        if type(courses) == str or type(courses) == list:
-            return Response(status=200, response=json.loads(str(courses)))
-        else:
-            return Response(status=500, response='Failed request')
+        return Response(status=200, response=get_all_courses())
+
     except Exception as e:
         print(e)
         return Response(status=500, response='Failed by exception')
@@ -296,7 +292,7 @@ def courses_by_id():
 
 #TODO ПРОВЕРИТЬ РАБОТОСПОСОБНОСТЬ
 @app.route("/allRating", methods= ['POST'])
-def courses_by_id():
+def all_rating():
     '''
     '''
     try:
@@ -304,7 +300,7 @@ def courses_by_id():
         data = json.loads(request.data.decode('utf-8'))
 
 
-        return get_courses_by_id(data)
+        return all_rating_db(data)
     except Exception as e:
         print("1", e)
 
