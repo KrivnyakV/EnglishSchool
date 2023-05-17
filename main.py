@@ -150,11 +150,11 @@ def add_course():
                         chapter['materials'][i]['link'] = url_for("static", filename=f"{data['idDirections']}_{data['id']}_{chapter['id']}_{i+1}.pdf")
 
                     except Exception as e:
-                        print(e)
+                        print("EXCEPTION:", e)
 
         return add_course_to_db(data)
     except Exception as e:
-        print(e)
+        print("EXCEPTION:", e)
 
         return Response(status=400, response="Неправильный запрос. Возможно ошибка с картинкой")
 
@@ -273,6 +273,47 @@ def rating():
         print("1", e)
 
         return Response(status=400, response="Неправильный запрос.")
+
+
+
+
+
+
+@app.route("/resultTest", methods= ['POST'])
+def rating():
+    '''
+    '''
+    try:
+
+        data = json.loads(request.data.decode('utf-8'))
+
+
+        return add_rating(data)
+    except Exception as e:
+        print("1", e)
+
+        return Response(status=400, response="Неправильный запрос.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

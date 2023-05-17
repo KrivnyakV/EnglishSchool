@@ -496,29 +496,70 @@ def add_rating(data):
         all_weight = 0
         correct_weight = 0
         print(type(data), data)
+
+        #Для каждого вопроса
         for question in data['result']:
-            all_weight += int(question['name'])
-            id_chapter = data['idChapters']
-            if type(data['idResponse']) == str:
-                if data['idResponse'] == data['correctId']:
+            #Считаем общий вес вопросов
+            if type(question['idResponse']) == str:
+                all_weight += int(question['name'])
+                print("OOOO", all_weight)
+            else:
+                for response in question['idResponse']:
+                    temporary_weight = int(response['name'])
+
+                all_weight += temporary_weight
+
+            id_chapter = question['idChapters']
+
+            #Считаем кол-во набранных баллов
+            if type(question['idResponse']) == str:
+                if question['idResponse'] == question['correctId']:
                     correct_weight += int(question['name'])
 
             else:
-                for response in question['idResponse']:
-                    if response['idRes'] in question['correctId'].split(","):
-                        correct_weight += int(response['name'])
+                print([True if response['idRes'] in question['correctId'].split(",") else False for response in question['idResponse']])
+                if all([True if response['idRes'] in question['correctId'].split(",") else False for response in question['idResponse']]):
+                    correct_weight += int(question['idResponse'][0]['name'])
+
 
         print("all_weight", all_weight)
         print("idChapters", id_chapter)
         print("correct_weight", correct_weight)
-        print(f"{correct_weight * 100 / all_weight }%")
+
+        correct_percent = round(correct_weight * 100 / all_weight)
+        print(f"{correct_percent} %")
 
     except Exception as e:
-        print(e)
+        print("Ошибка:", e)
 
 
 
-    return Response(status=200, response=json.dumps({"test":"huy"}))
+    request = select(UsersRating.answers).where(UsersRating.email_user == data['email'] and UsersRating.id_course == data['id'])
+    conn = engine.connect()
+    response = conn.execute(request)
+    one_answers = response.fetchone()
+    conn.commit()
+    conn.close()
+
+
+    answers = json.loads(one_answers[0].replace("'", '"'))
+    print(answers)
+
+    answers[id_chapter] = correct_percent
+
+
+    rating_request = update(UsersRating).values(id_course=data['id'], email_user=data['email'], answers=str(answers)).where(UsersRating.id_course == data['id'] and UsersRating.email_user == data['email'])
+
+
+
+    conn = engine.connect()
+    conn.execute(rating_request)
+    conn.commit()
+    conn.close()
+
+
+
+    return Response(status=200, response=json.dumps(answers))
     # try:
     #     append_rating = update(UsersRating).values(id_course=data['id'], email_user=data['email'], answers=????)
     #     conn = engine.connect()
