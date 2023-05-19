@@ -59,7 +59,7 @@ def sign_in():
     else:
         return Response(status=500,response="Authentification failed")
 
-
+#TODO
 #Возвращение информации о пользователе по токену доступа
 @app.route("/users/me", methods= ['GET'])
 def check_user():
@@ -69,7 +69,35 @@ def check_user():
         user_data = getUserData(real_token)
         #------
 
-        return Response(status=200,response = json.dumps({'email':user_data[0], 'name':user_data[2], 'family': user_data[3], 'otchestvo':user_data[4], 'role':user_data[5], 'activeCourse': user_data[6], 'adminCourse': user_data[7]}))
+        result = {'email':user_data[0], 'name':user_data[2], 'family': user_data[3], 'otchestvo':user_data[4], 'role':user_data[5], 'activeCourse': user_data[6], 'adminCourse': user_data[7]}
+        if type(user_data[7]) == str and user_data[7] == "[]":
+            result['adminCourse'] = []
+        elif user_data[7] !=[]:
+            print(user_data[7], type(user_data[7]))
+
+            result['adminCourse'] = [int(x) for x in user_data[7].strip('][').split(',')]
+        else:
+            result['adminCourse'] = []
+
+
+
+
+
+
+        print("DDDDDD", user_data[6], type(user_data[6]))
+        if type(user_data[6]) == str and user_data[6] == "[]":
+            result['activeCourse'] = []
+
+        elif user_data[6] != []:
+            print(user_data[6], type(user_data[6]))
+            result['activeCourse'] =[int(x) for x in user_data[6].strip('][').split(',')]
+        else:
+            result['activeCourse'] = []
+
+        print(result)
+        return Response(status=200, response=json.dumps(result))
+
+
     else:
         return Response(status=500,response="Invalid token")
 
@@ -161,7 +189,6 @@ def add_course():
 
 
 
-#TODO ПРОТЕСТИРОВАТЬ
 @app.route("/fullCourses", methods= ['GET'])
 def get_full_courses():
     '''
@@ -236,6 +263,22 @@ def delete_course():
         return Response(status=400, response="Неправильный запрос.")
 
 
+@app.route("/fullDirection/<id>", methods= ['GET'])
+def delete_course_from_db(id):
+    '''
+    '''
+    return delete_course_from_database(id)
+
+
+
+
+
+
+
+
+
+
+
 
 @app.route("/courseStatus", methods= ['POST'])
 def course_status():
@@ -270,27 +313,83 @@ def rating():
         return Response(status=400, response="Неправильный запрос.")
 
 
-
-
-
-#TODO ПРОВЕРИТЬ РАБОТОСПОСОБНОСТЬ
-@app.route("/getCcoursesByID", methods= ['POST'])
-def courses_by_id():
+@app.route("/resultTestTeacher/<id>", methods= ['GET'])
+def result_for_teacher(id):
     '''
     '''
     try:
 
-        data = json.loads(request.data.decode('utf-8'))
 
 
-        return get_courses_by_id(data)
+
+        return result_for_teacher_by_id(id)
     except Exception as e:
         print("1", e)
 
         return Response(status=400, response="Неправильный запрос.")
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+# #TODO ПРОВЕРИТЬ РАБОТОСПОСОБНОСТЬ
+# @app.route("/getCcoursesByID", methods= ['POST'])
+# def courses_by_id():
+#     '''
+#     '''
+#     try:
+#
+#         data = json.loads(request.data.decode('utf-8'))
+#
+#
+#         return get_courses_by_id(data)
+#     except Exception as e:
+#         print("1", e)
+#
+#         return Response(status=400, response="Неправильный запрос.")
+
+
 #TODO ПРОВЕРИТЬ РАБОТОСПОСОБНОСТЬ
+
+
+
+@app.route("/ratingCourse", methods= ['POST'])
+def rating_course():
+    '''
+    '''
+    try:
+
+        data = json.loads(request.data.decode('utf-8'))
+        print(data)
+
+        return add_rating_to_course(data)
+    except Exception as e:
+        print("1", e)
+
+        return Response(status=400, response="Неправильный запрос.")
+
+
+
+
+
+
+
+
 @app.route("/allRating", methods= ['POST'])
 def all_rating():
     '''
@@ -308,13 +407,55 @@ def all_rating():
 
 
 
+@app.route("/resultTestTeacher", methods= ['POST'])
+def result_teacher():
+    '''
+    '''
+    try:
+
+        data = json.loads(request.data.decode('utf-8'))
+        print(data)
+
+        return teacher_result(data)
+    except Exception as e:
+        print("1", e)
+
+        return Response(status=400, response="Неправильный запрос.")
+
+
+@app.route("/resultTestStudent", methods= ['POST'])
+def result_student():
+    '''
+    '''
+    try:
+
+        data = json.loads(request.data.decode('utf-8'))
+        print(data)
+
+        return student_result(data)
+    except Exception as e:
+        print("1", e)
+
+        return Response(status=400, response="Неправильный запрос.")
 
 
 
+#TODO ПРОВЕРИТЬЬЬЬ!!!!!!!!!
+@app.route("/resultTestStudentBlock", methods= ['POST'])
+def result_student_block():
+    '''
+    '''
+    try:
 
+        data = json.loads(request.data.decode('utf-8'))
+        print(data)
+        #data['email'], data['id']
 
+        return result_for_student_by_id(data)
+    except Exception as e:
+        print("1", e)
 
-
+        return Response(status=400, response="Неправильный запрос.")
 
 
 
